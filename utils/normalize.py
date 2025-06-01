@@ -1,18 +1,29 @@
-def normalize(serie, col):
-        """
-        serie: pd.Dataframe
-        col: to be normalized column
+def normalize_centered(serie, col):
+    """
+    Normalize a column to have mean 0 and approximately range [-5, 5].
 
-        returns: dataframe["normalized_col"]
-        """
+    Parameters:
+    serie: pd.DataFrame
+    col: str, column name to normalize
 
-        min_value = serie[col].min()
-        max_value = serie[col].max()
+    Returns:
+    serie with new column 'normalized_<col>'
+    """
+    values = serie[col]
+    mean = values.mean()
+    std = values.std()
 
-        # Normalize to range [-5, 5]
-        normalized_series = -5 + 2 * (serie[col] - min_value) / (max_value - min_value) * 5
+    if std == 0 or pd.isna(std):
+        raise ValueError(f"Standard deviation is zero or NaN for column '{col}' — cannot normalize.")
 
-        # Add normalized data to the DataFrame for plotting
-        serie[f'normalized_{col}'] = normalized_series
+    # Standardize (mean 0, std 1)
+    standardized = (values - mean) / std
 
-        return serie
+    # Scale to approximately [-5, 5]
+    scaled = standardized * 5
+
+    # Clip extreme values beyond the expected range (e.g., 3+ std devs)
+    scaled = scaled.clip(-5, 5)
+
+    serie[f'normalized_{col}'] = scaled
+    return serie

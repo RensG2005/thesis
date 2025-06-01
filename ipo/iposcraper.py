@@ -8,7 +8,6 @@ import random
 from datetime import datetime, timedelta
 import yfinance as yf
 
-
 def scrape_euronext_ipo_page(page_num):
     url = f"https://live.euronext.com/en/ipo-showcase?combine=&field_iponi_ipo_date_value%5Bmin%5D=&field_iponi_ipo_date_value%5Bmax%5D=&field_trading_location_target_id%5B404%5D=404&page={page_num}"
     
@@ -90,9 +89,25 @@ def scrape_multiple_pages(start_page=0, end_page=10):
 
 ipo_df = scrape_multiple_pages(0, 10)
 
-ipo_df.to_csv("euronextIPOAms.csv", index=False)
+# ipo_df = pd.read_csv("/home/rens/scriptie/ipo/euronextIPOAms.csv")
+
+# print(ipo_df)
+
+ipo_df["IPOdate"] = pd.to_datetime(ipo_df["IPOdate"])
+ipo_df = ipo_df.sort_values('IPOdate')
+
+ipo_df = ipo_df.drop_duplicates()
+
+ipo_df['date'] = ipo_df['IPOdate'].dt.to_period('M').dt.to_timestamp()
+ipo_counts = ipo_df.groupby('date').size().reset_index(name='ipo_count')
+
+ipo_df = ipo_df.merge(ipo_counts, on='date', how='left')
+
+ipo_df.to_csv("/home/rens/scriptie/ipo/euronextIPOAms.csv", index=False)
+
 print("\nSample of scraped data:")
 print(ipo_df.head())
+
 # ipo_df = pd.read_csv("euronextIPOAms.csv")
 
 # def get_returns(ticker, ipo_date):
