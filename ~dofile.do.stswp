@@ -1,0 +1,1 @@
+ correlate aexpricepct PC1 consumer_sentiment_pca_norm googletrends_pca_norm ipo_count_norm Equity_to_Debt_Ratio_norm detrended_turnover_norm detrended_turnover_norm Dividend_Premium_norm

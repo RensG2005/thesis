@@ -6,16 +6,13 @@ import matplotlib.pyplot as plt
 import os
 
 def load_df():
-    # Get the path to the CSV file
     module_dir = os.path.dirname(os.path.abspath(__file__))
     output_csv_path = os.path.join(module_dir, "consumer_sentiment_pca.csv")
     csv_path = os.path.join(module_dir, "consumentenconfidenceCBS.csv")
     
-    # Load the data
     df = pd.read_csv(csv_path)
     df["date"] = pd.to_datetime(df["date"])
     
-    # Create a PCA-based composite indicator
     sentiment_columns = [
         "Consumer confidence",
         "Economic climate",
@@ -25,18 +22,11 @@ def load_df():
         "Right time to make large purchases"
     ]
     
-    # Extract features for PCA
     features = df[sentiment_columns]
-    
-    # Standardize the features (important for PCA)
     scaler = StandardScaler()
     scaled_features = scaler.fit_transform(features)
-    
-    # Apply PCA
     pca = PCA(n_components=1)  # We want a single time series
     principal_component = pca.fit_transform(scaled_features)
-    
-    # Create a new dataframe with the date and PCA component
     df_pca = pd.DataFrame({
         'date': df['date'],
         'consumer_sentiment_pca': principal_component.flatten()
@@ -45,11 +35,9 @@ def load_df():
     df_pca[['date', 'consumer_sentiment_pca']].to_csv(output_csv_path, index=False)
     print(f"PCA results saved to: {output_csv_path}")
 
-    # Add the explained variance as metadata
     explained_variance = pca.explained_variance_ratio_[0]
     print(f"PCA Explained Variance: {explained_variance:.4f} ({explained_variance*100:.2f}%)")
     
-    # Display component loadings to understand what's driving the composite
     loadings = pd.DataFrame(
         pca.components_.T,
         columns=['PC1'],
@@ -58,9 +46,7 @@ def load_df():
     print("\nComponent Loadings (contribution of each feature):")
     print(loadings)
     
-    # Add original columns for comparison
     df_pca = pd.merge(df_pca, df[['date'] + sentiment_columns], on='date')
-    
     return df_pca
 
 df_pca = load_df()

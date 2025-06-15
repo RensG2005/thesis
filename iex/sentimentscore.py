@@ -2,15 +2,26 @@ import pandas as pd
 import os
 import glob
 import time
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
+import tensorflow
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
+from transformers import BertForSequenceClassification, BertConfig
 
-# Load tokenizer and model
-tokenizer = AutoTokenizer.from_pretrained("DTAI-KULeuven/robbert-v2-dutch-sentiment")
-model = AutoModelForSequenceClassification.from_pretrained("DTAI-KULeuven/robbert-v2-dutch-sentiment")
+config = BertConfig.from_pretrained('./multilingualBERTmodel/config.json')
+
+model = BertForSequenceClassification.from_pretrained(
+    './multilingualBERTmodel/bert_model.ckpt',
+    from_tf=True,
+    config=config
+)
+
+# Load multilingual FinBERT model and tokenizer
+# model_name = "./multilingualBERTmodel"
+# tokenizer = AutoTokenizer.from_pretrained(model_name)
+# model = AutoModelForSequenceClassification.from_pretrained(model_name)
 model.eval()
 
-# Load CSV
+# Load CSV file
 csv_file = glob.glob(os.path.join('/home/rens/scriptie/iex/postslist/', 'EXOR-NV.csv'))[0]
 df = pd.read_csv(csv_file)
 
@@ -21,30 +32,35 @@ if 'sentiment_score' not in df.columns:
 # Sentiment scoring function
 def get_sentiment_score(text):
     try:
-        inputs = tokenizer(str(text), return_tensors="pt", truncation=True, max_length=512)
+        if pd.isna(text) or not isinstance(text, str) or text.strip() == "":
+            return None
+
+        inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
         with torch.no_grad():
             outputs = model(**inputs)
         scores = torch.nn.functional.softmax(outputs.logits, dim=1)[0]
-        # Assuming label mapping: 0 = negative, 1 = neutral, 2 = positive
+
+        # 0: negative, 1: neutral, 2: positive
         sentiment = scores.argmax().item()
-        # Map sentiment to -10 to 10 scale
         if sentiment == 0:
             return -10 * scores[0].item()
         elif sentiment == 1:
             return 0.0
         else:
             return 10 * scores[2].item()
+
     except Exception as e:
         print(f"Error processing text: {e}")
         return None
 
-# Process with progress
+# Process rows with progress logging
 start_time = time.time()
 total_rows = len(df)
 
 for idx, row in df.iterrows():
     if pd.isna(row['sentiment_score']):
-        df.at[idx, 'sentiment_score'] = get_sentiment_score(row['content'])
+        score = get_sentiment_score(row.get('content', ''))
+        df.at[idx, 'sentiment_score'] = score
 
         if idx % 10 == 0 or idx == total_rows - 1:
             df.to_csv(csv_file, index=False)

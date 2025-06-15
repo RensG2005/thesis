@@ -10,17 +10,14 @@ def plot_line_graph(df, x_column, y_column, title=None, xlabel=None, ylabel=None
     
     fig, ax = plt.subplots(figsize=figsize)
 
-    # If only one y_column is passed as string, make it a list
     if isinstance(y_column, str):
         y_column = [y_column]
     
-    # Set default colors and linestyles if not provided
     if colors is None:
-        colors = sns.color_palette("tab10")  # Use seaborn default palette
+        colors = sns.color_palette("tab10") 
     if linestyles is None:
         linestyles = ['-'] * len(y_column)
 
-    # Plot each y column
     for i, col in enumerate(y_column):
         ax.plot(df[x_column], df[col], 
                 color=colors[i % len(colors)], 
